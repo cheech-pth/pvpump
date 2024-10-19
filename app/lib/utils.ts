@@ -1,11 +1,22 @@
-import { Revenue } from './definitions';
-
 export const formatCurrency = (amount: number) => {
   return (amount / 100).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
   });
 };
+
+export const validateMint = (
+  mint: string
+) => {
+  const fetchUrl = 'https://frontend-api.pump.fun/coins/';
+  fetch(`${fetchUrl + mint}`, { cache: "no-cache" })
+  .then((res) => res.json())
+  .then((data) => {
+    console.log('Returning fetch data from utils')
+    console.log(data)
+    return data
+  })
+}
 
 export const formatDateToLocal = (
   dateStr: string,
@@ -21,49 +32,55 @@ export const formatDateToLocal = (
   return formatter.format(date);
 };
 
-export const generateYAxis = (revenue: Revenue[]) => {
-  // Calculate what labels we need to display on the y-axis
-  // based on highest record and in 1000s
-  const yAxisLabels = [];
-  const highestRecord = Math.max(...revenue.map((month) => month.revenue));
-  const topLabel = Math.ceil(highestRecord / 1000) * 1000;
+export const formatTime = (timestamp: number) => {
+  const now = new Date().getTime();
+  const diff = now - timestamp;
+  if (diff < 1000 * 60) return 'just now';
+  if (diff < 1000 * 60 * 2) return `${Math.floor(diff / 1000)}s`;
+  if (diff < 1000 * 60 * 60) return `${Math.floor(diff / 1000 / 60)}m`;
+  if (diff < 1000 * 60 * 60 * 24) return `${Math.floor(diff / 1000 / 60 / 60)}h`;
+  if (diff < 1000 * 60 * 60 * 24 * 30) return `${Math.floor(diff / 1000 / 60 / 60 / 24)} days`;
+  return `A long time`;
+}
 
-  for (let i = topLabel; i >= 0; i -= 1000) {
-    yAxisLabels.push(`$${i / 1000}K`);
+export function copyToClipboard(mint, event) {
+  navigator.clipboard.writeText(mint.mint).then(() => {
+    const pElement = document.createElement('p');
+    pElement.textContent = `$${mint.symbol} Copied to clipboard!`;
+    pElement.className = 'bg-gray-800 text-white py-2 px-4 rounded shadow-md';
+    const mouseY = event.clientY; // Get the y-coordinate of the mouse click
+    const mouseX = event.clientX; // Get the x-coordinate of the mouse click
+    pElement.style.position = 'absolute';
+    pElement.style.top = `${mouseY + 15}px`;
+    pElement.style.left = `${mouseX - 10}px`;
+    document.body.appendChild(pElement);
+    setTimeout(() => {
+      pElement.remove();
+    }, 1000); // Remove the element after 1 second
+  });
+}
+
+export function formatSolAmount(inputNumber) {
+  let numberString = inputNumber.toString();
+
+  // Determine the length of the number string
+  let length = numberString.length;
+
+  if (length === 10) {
+      // For a 10-digit number, format as 1.854391038
+      let integerPart = numberString.charAt(0);
+      let decimalPart = numberString.slice(1);
+      return `${integerPart}.${decimalPart}`;
+  } else if (length === 9) {
+      // For a 9-digit number, format as 0.854391038
+      return `0.${numberString}`;
+  } else if (length <= 8) {
+      // For numbers with 8 or fewer digits, add leading zeros and format as 0.045453859
+      let zerosToAdd = 8 - length;
+      let formattedDecimal = numberString.padStart(8, '0');
+      return `0.${formattedDecimal}`;
+  } else {
+      // Handle other cases (if necessary)
+      return numberString;
   }
-
-  return { yAxisLabels, topLabel };
-};
-
-export const generatePagination = (currentPage: number, totalPages: number) => {
-  // If the total number of pages is 7 or less,
-  // display all pages without any ellipsis.
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
-  }
-
-  // If the current page is among the first 3 pages,
-  // show the first 3, an ellipsis, and the last 2 pages.
-  if (currentPage <= 3) {
-    return [1, 2, 3, '...', totalPages - 1, totalPages];
-  }
-
-  // If the current page is among the last 3 pages,
-  // show the first 2, an ellipsis, and the last 3 pages.
-  if (currentPage >= totalPages - 2) {
-    return [1, 2, '...', totalPages - 2, totalPages - 1, totalPages];
-  }
-
-  // If the current page is somewhere in the middle,
-  // show the first page, an ellipsis, the current page and its neighbors,
-  // another ellipsis, and the last page.
-  return [
-    1,
-    '...',
-    currentPage - 1,
-    currentPage,
-    currentPage + 1,
-    '...',
-    totalPages,
-  ];
-};
+}

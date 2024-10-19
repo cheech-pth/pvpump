@@ -12,11 +12,28 @@ const config: Config = {
         '13': 'repeat(13, minmax(0, 1fr))',
       },
       colors: {
-        blue: {
-          400: '#2589FE',
-          500: '#0070F3',
-          600: '#2F6FEB',
+        transparent: 'transparent',
+        current: 'currentColor',
+        'white': '#ffffff',
+        'purple': '#3f3cbb',
+        'midnight': '#121063',
+        'metal': '#565584',
+        'tahiti': '#3ab7bf',
+        'silver': '#ecebff',
+        'bubble-gum': '#ff77e9',
+        'bermuda': '#78dcca',
+        'dark-theme': {
+          100: '#161A30',
+          200: '#31304D',
+          300: '#B6BBC4',
+          400: '#F0ECE5',
         },
+        'mars': {
+          'black': '#191919',
+          'red': '#750E21',
+          'orange': '#E3651D',
+          'green': '#BED754'
+        }
       },
     },
     keyframes: {

@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+.game-container {
+  position: relative;
+  width: 400px;
+  height: 300px;
+  border: 1px solid #ccc;
+}
+
+.draggable-div {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background-color: #4CAF50;
+  cursor: move;
+}
+
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
@@ -15,4 +30,19 @@ input[type='number']::-webkit-inner-spin-button {
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+.select-css {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 100%;
+}
+
+.select-css::-ms-expand {
+  display: none;
+}
+
+table > tbody > tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.26);
 }
