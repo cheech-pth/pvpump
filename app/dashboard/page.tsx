@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import { socket } from './socket';
 import { pumpfunNewTrade, tradeList } from '../lib/definitions';
 import { LatestTrades } from '../components/LatestTrades';
@@ -9,9 +9,14 @@ import { SiSolana } from "react-icons/si";
 
 const timeAtLaunch = Date.now()
 
+const TradesLocalStorageKey = "stored-trades"
+
 export default function Dashboard() {
   const [tradeCount, setTradeCount] = useState(0);
-  const [storedTrades, setTrade] = useState<tradeList>({});
+  const [storedTrades, setTrade] = useState<tradeList>(() => {
+    const localStorageData = localStorage.getItem('stored-trades');
+    return localStorageData ? JSON.parse(localStorageData) : {};
+  });
   const [solPrice, setSolPrice] = useState(null);
   const [isLoading, setLoading] = useState(true);
   const [currentKing, setKing] = useState({mint: '', time: 0});
@@ -52,39 +57,6 @@ export default function Dashboard() {
     //   console.log(fetchCoin)
     // }
   }
-
-  function onTrade(obj: pumpfunNewTrade) {
-    if (obj.king_of_the_hill_timestamp) { if (obj.king_of_the_hill_timestamp > currentKing.time) { setKing({mint: obj.mint, time: obj.king_of_the_hill_timestamp}) } }
-
-    setTradeCount((prevCount) => prevCount + 1); // Count every trade received on the websocket
-
-    if (!storedTrades[obj.mint]) { // If mint doesn't exist, add to storedTrades with init values to count
-      setTrade((prev) => ({ 
-        ...prev, 
-        [obj.mint]: 
-          {
-            count: 1,
-            buyCount: obj.is_buy ? 1 : 0,
-            sellCount: !obj.is_buy ? 1 : 0,
-            ...obj
-          }
-        }));
-    } else {
-        if (obj.user !== storedTrades[obj.mint].user) { // Conditional to prevent bump bot spam TODO: Needs better implementation, too many bots still.
-          setTrade((prev) => ({
-            ...prev,
-            [obj.mint]: {
-              count: prev[obj.mint].count + 1,
-              buyCount: obj.is_buy ? prev[obj.mint].buyCount + 1 : prev[obj.mint].buyCount,
-              sellCount: !obj.is_buy ? prev[obj.mint].sellCount + 1 : prev[obj.mint].sellCount,
-              ...obj
-            }
-          })
-        );
-      }
-    }
-  }
-
   // Pump fun changes have broken this code, needs to be authentication with cookies.
   // useEffect(() => { // Fetch Solana price
   //   fetch('https://frontend-api.pump.fun/sol-price', { next: { revalidate: 3600 } })
@@ -95,16 +67,54 @@ export default function Dashboard() {
   //     })
   // }, [])
 
-  useEffect(() => { // Listen to WS for messages and stop when unmounted
+  useEffect(() => {
+    function onTrade(obj: pumpfunNewTrade) {
+      if (obj.king_of_the_hill_timestamp) { if (obj.king_of_the_hill_timestamp > currentKing.time) { setKing({mint: obj.mint, time: obj.king_of_the_hill_timestamp}) } }
+  
+      setTradeCount((prevCount) => prevCount + 1); // Count every trade received on the websocket
+  
+      if (!storedTrades[obj.mint]) { // If mint doesn't exist, add to storedTrades with init values to count
+        setTrade((prev) => ({ 
+          ...prev, 
+          [obj.mint]: 
+            {
+              count: 1,
+              buyCount: obj.is_buy ? 1 : 0,
+              sellCount: !obj.is_buy ? 1 : 0,
+              ...obj
+            }
+          }));
+      } else {
+          if (obj.user !== storedTrades[obj.mint].user) { // Conditional to prevent bump bot spam TODO: Needs better implementation, too many bots still.
+            setTrade((prev) => ({
+              ...prev,
+              [obj.mint]: {
+                count: prev[obj.mint].count + 1,
+                buyCount: obj.is_buy ? prev[obj.mint].buyCount + 1 : prev[obj.mint].buyCount,
+                sellCount: !obj.is_buy ? prev[obj.mint].sellCount + 1 : prev[obj.mint].sellCount,
+                ...obj
+              }
+            })
+          );
+        }
+      }
+    }
+  
+    // Listen to WS for messages and stop when unmounted
     socket.on('tradeCreated', onTrade);
+  
     return () => {
+      // Clean up WS listener
       socket.off('tradeCreated', onTrade);
     };
   });
 
   // if (isLoading) return <p>Loading...</p>
   // if (!solPrice) return <p>No solana price data</p>
-
+  useLayoutEffect(() => {
+    localStorage.setItem('stored-trades', JSON.stringify(storedTrades));
+  }, [storedTrades]);
+  
   return (
     <div className="App">
       <button onClick={() => {raydiumCheck(storedTrades)}}>Fetch</button>
